@@ -32,7 +32,12 @@ module ActsAsTenant
             else
               query_criteria = {fkey.to_sym => keys}
               query_criteria[polymorphic_type.to_sym] = ActsAsTenant.current_tenant.class.to_s if options[:polymorphic]
-              where(query_criteria)
+              if options[:has_secondary_tenants]
+                # build up a query that includes keys from the secondary tenant table
+                where(query_criteria).or(where("? = ANY(#{options[:has_secondary_tenants]})", ActsAsTenant.current_tenant.send(pkey)))
+              else
+                where(query_criteria)
+              end
             end
           else
             all
